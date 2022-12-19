@@ -7,5 +7,5 @@ export const authConfig = {
   // domain: 'dev-nd9990-p4.us.auth0.com',
   domain: 'dev-z6kqxn0qjyxdf3h1.us.auth0.com',            // Auth0 domain
   clientId: 'yjmIClurYIJjpeZJXuDZyDFkfOwHeTIv',          // Auth0 client id
-  callbackUrl: 'http://dongtiennguyen-todo-webapp.s3-website-us-east-1.amazonaws.com/callback'
+  callbackUrl: 'http://localhost:3000/callback'
 }
