@@ -91,7 +91,10 @@ functions:
         Action:
           - dynamodb:GetItem
           - dynamodb:Query
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+        Resource: [
+          arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE},
+          arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/*
+        ]
       - Effect: Allow
         Action:
           - xray:PutTraceSegments
