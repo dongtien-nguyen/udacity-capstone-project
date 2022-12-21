@@ -3,6 +3,8 @@ import * as AWSXRay from 'aws-xray-sdk';
 import { createLogger } from '../utils/logger';
 import { TodoItem } from '../models/TodoItem';
 import { TodoUpdate } from '../models/TodoUpdate';
+import { GetTodosResponse } from '../models/GetTodosResponse';
+import { encodeNextKey } from './utils';
 
 const XAWS = AWSXRay.captureAWS(AWS);
 const docClient = new XAWS.DynamoDB.DocumentClient();
@@ -14,7 +16,7 @@ export class TodosAccess {
         private readonly todosTable = process.env.TODOS_TABLE
     ) { }
 
-    async getTodos(userId: string): Promise<TodoItem[]> {
+    async getTodos(userId: string, nextKey: any, limit: number): Promise<GetTodosResponse> {
         logger.debug('Getting all todos');
 
         const params = {
@@ -22,12 +24,17 @@ export class TodosAccess {
             KeyConditionExpression: 'userId = :userId',
             ExpressionAttributeValues: {
                 ':userId': userId
-            }
+            },
+            Limit: limit,
+            ExclusiveStartKey: nextKey
         };
   
         const result = await docClient.query(params).promise();
   
-        return result.Items as TodoItem[];
+        return { 
+            items: result.Items as TodoItem[],
+            nextKey: encodeNextKey(result.LastEvaluatedKey)
+        } as GetTodosResponse;
     }
   
     async createTodo(todo: TodoItem): Promise<TodoItem> {

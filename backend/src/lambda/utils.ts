@@ -14,3 +14,72 @@ export function getUserId(event: APIGatewayProxyEvent): string {
 
   return parseUserId(jwtToken)
 }
+
+// From udacity, lession 2
+// https://github.com/udacity/cloud-developer/blob/f8c8feb72fafb9725cec8552248437d470c57846/course-04/exercises/lesson-2/solution/index.js#L87
+
+/**
+ * Get value of the limit parameter.
+ */
+export function parseLimitParameter(event: APIGatewayProxyEvent): number {
+  const limitStr = getQueryParameter(event, 'limit')
+  if (!limitStr) {
+    return undefined
+  }
+
+  const limit = parseInt(limitStr, 10)
+  if (limit <= 0) {
+    throw new Error('Limit should be positive')
+  }
+
+  return limit
+}
+
+/**
+ * Get value of the limit parameter.
+ *
+ * @param event HTTP event passed to a Lambda function
+ *
+ * @returns parsed "nextKey" parameter
+ */
+export function parseNextKeyParameter(event: APIGatewayProxyEvent): any {
+  const nextKeyStr = getQueryParameter(event, 'nextKey')
+  if (!nextKeyStr) {
+    return undefined
+  }
+
+  const uriDecoded = decodeURIComponent(nextKeyStr)
+  return JSON.parse(uriDecoded)
+}
+
+/**
+ * Get a query parameter or return "undefined"
+ *
+ * @param {Object} event HTTP event passed to a Lambda function
+ * @param {string} name a name of a query parameter to return
+ *
+ * @returns {string} a value of a query parameter value or "undefined" if a parameter is not defined
+ */
+export function getQueryParameter(event: APIGatewayProxyEvent, name: string): string {
+  const queryParams = event.queryStringParameters
+  if (!queryParams) {
+    return undefined
+  }
+
+  return queryParams[name]
+}
+
+/**
+ * Encode last evaluated key using
+ *
+ * @param {Object} lastEvaluatedKey a JS object that represents last evaluated key
+ *
+ * @return {string} URI encoded last evaluated key
+ */
+export function encodeNextKey(lastEvaluatedKey: any): string {
+  if (!lastEvaluatedKey) {
+    return null
+  }
+
+  return encodeURIComponent(JSON.stringify(lastEvaluatedKey))
+}

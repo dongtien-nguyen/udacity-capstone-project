@@ -1,6 +1,7 @@
 import { TodosAccess } from '../dataLayer/todosAcess';
 import { AttachmentUtils } from '../helpers/attachmentUtils';
 import { TodoItem } from '../models/TodoItem';
+import { GetTodosResponse } from '../models/GetTodosResponse';
 import { CreateTodoRequest } from '../requests/CreateTodoRequest';
 import { UpdateTodoRequest } from '../requests/UpdateTodoRequest';
 import { createLogger } from '../utils/logger';
@@ -24,10 +25,10 @@ export async function createTodo(model: CreateTodoRequest, userId: string): Prom
     return await todoAccess.createTodo(newItem);
 }
 
-export async function getTodosForUser(userId: string): Promise<any> {
+export async function getTodosForUser(userId: string, nextKey: any, limit: number): Promise<GetTodosResponse> {
     logger.info(`Get todo for user: ${userId}`);
 
-    return await todoAccess.getTodos(userId);
+    return await todoAccess.getTodos(userId, nextKey, limit);
 }
 
 export async function updateTodo(todoId: string, userId: string, model: UpdateTodoRequest) {
