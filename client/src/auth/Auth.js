@@ -19,11 +19,17 @@ export default class Auth {
 
     this.login = this.login.bind(this);
     this.logout = this.logout.bind(this);
-    this.handleAuthentication = this.handleAuthentication.bind(this);
-    this.isAuthenticated = this.isAuthenticated.bind(this);
+    this.handleAuthentication = this.handleAuthentication.bind(this);    
     this.getAccessToken = this.getAccessToken.bind(this);
     this.getIdToken = this.getIdToken.bind(this);
     this.renewSession = this.renewSession.bind(this);
+
+    // Load token from localStorage if user is logged in
+    if (localStorage.getItem('isLoggedIn') === "true") {
+      this.loadToken();
+    }
+
+    this.isAuthenticated = this.isAuthenticated.bind(this);
   }
 
   login() {
@@ -61,6 +67,7 @@ export default class Auth {
     this.accessToken = authResult.accessToken;
     this.idToken = authResult.idToken;
     this.expiresAt = expiresAt;
+    this.storeToken();
 
     // navigate to the home route
     this.history.replace('/');
@@ -84,8 +91,8 @@ export default class Auth {
     this.idToken = null;
     this.expiresAt = 0;
 
-    // Remove isLoggedIn flag from localStorage
-    localStorage.removeItem('isLoggedIn');
+    // Remove session info localStorage
+    this.resetStorage();
 
     this.auth0.logout({
       return_to: window.location.origin
@@ -93,6 +100,25 @@ export default class Auth {
 
     // navigate to the home route
     this.history.replace('/');
+  }
+
+  storeToken() {
+    localStorage.setItem('idToken', this.idToken);
+    localStorage.setItem('accessToken', this.accessToken);    
+    localStorage.setItem('expiresAt', this.expiresAt);
+  }
+
+  resetStorage() {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('idToken');
+    localStorage.removeItem('accessToken');    
+    localStorage.removeItem('expiresAt');
+  }
+
+  loadToken() {
+    this.idToken = localStorage.getItem('idToken');
+    this.accessToken = localStorage.getItem('accessToken');
+    this.expiresAt = localStorage.getItem('expiresAt');
   }
 
   isAuthenticated() {
