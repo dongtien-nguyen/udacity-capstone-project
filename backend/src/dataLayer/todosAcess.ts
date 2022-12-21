@@ -21,11 +21,13 @@ export class TodosAccess {
 
         const params = {
             TableName: this.todosTable,
+            IndexName: process.env.TODOS_DUE_DATE_INDEX,
             KeyConditionExpression: 'userId = :userId',
             ExpressionAttributeValues: {
                 ':userId': userId
             },
             Limit: limit,
+            ScanIndexForward: false,
             ExclusiveStartKey: nextKey
         };
   
