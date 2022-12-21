@@ -92,8 +92,8 @@ functions:
           - dynamodb:GetItem
           - dynamodb:Query
         Resource: [
-          arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE},
-          arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/*
+          'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}',
+          'arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/*'
         ]
       - Effect: Allow
         Action:
