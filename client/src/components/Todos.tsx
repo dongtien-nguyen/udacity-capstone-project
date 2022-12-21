@@ -10,13 +10,17 @@ import {
   Header,
   Icon,
   Input,
-  Image,
-  Loader
+  Loader,
+  Select,
+  Container,
+  Item
 } from 'semantic-ui-react'
 
 import { createTodo, deleteTodo, getTodos, patchTodo } from '../api/todos-api'
 import Auth from '../auth/Auth'
+import { GetTodosRequest } from '../types/GetTodosRequest'
 import { Todo } from '../types/Todo'
+import defaultImage from "../assets/images/image.png"
 
 interface TodosProps {
   auth: Auth
@@ -27,13 +31,26 @@ interface TodosState {
   todos: Todo[]
   newTodoName: string
   loadingTodos: boolean
+  param: GetTodosRequest
+  nextKeyList: string[]
 }
+
+const LIMIT_OPTIONS = [
+  { key: '5', value: 5, text: '5 items per page' },
+  { key: '10', value: 10, text: '10 items per page' },
+  { key: '15', value: 15, text: '15 items per page' }
+]
 
 export class Todos extends React.PureComponent<TodosProps, TodosState> {
   state: TodosState = {
     todos: [],
     newTodoName: '',
-    loadingTodos: true
+    loadingTodos: true,
+    param: {
+      nextKey: '',
+      limit: 5
+    },
+    nextKeyList: []
   }
 
   handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,14 +64,19 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
   onTodoCreate = async (event: React.ChangeEvent<HTMLButtonElement>) => {
     try {
       const dueDate = this.calculateDueDate()
-      const newTodo = await createTodo(this.props.auth.getIdToken(), {
+      await createTodo(this.props.auth.getIdToken(), {
         name: this.state.newTodoName,
         dueDate
       })
-      this.setState({
-        todos: [...this.state.todos, newTodo],
-        newTodoName: ''
-      })
+      this.setState({ 
+        loadingTodos: true,
+        newTodoName: '',
+        nextKeyList: [], 
+        param: {
+          ...this.state.param,
+          nextKey: ''
+        } 
+      });
     } catch {
       alert('Todo creation failed')
     }
@@ -63,9 +85,14 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
   onTodoDelete = async (todoId: string) => {
     try {
       await deleteTodo(this.props.auth.getIdToken(), todoId)
-      this.setState({
-        todos: this.state.todos.filter(todo => todo.todoId !== todoId)
-      })
+      this.setState({ 
+        loadingTodos: true,
+        nextKeyList: [], 
+        param: {
+          ...this.state.param,
+          nextKey: ''
+        } 
+      });
     } catch {
       alert('Todo deletion failed')
     }
@@ -89,11 +116,42 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     }
   }
 
-  async componentDidMount() {
+  onClickNextButton() {
+    this.state.nextKeyList.push(this.state.param.nextKey);
+    this.setState({ loadingTodos: true });
+  }
+
+  onClickPreviousButton() {
+    this.state.nextKeyList.pop();
+    this.setState({        
+      param: {
+        ...this.state.param,
+        nextKey: this.state.nextKeyList.at(-1) || ''
+      }, 
+      loadingTodos: true });
+  }
+
+  onChangeLimit = (newLimit: number) => {
+    this.setState({ 
+      loadingTodos: true,
+      nextKeyList: [], 
+      param: {
+        ...this.state.param,
+        limit: newLimit,
+        nextKey: ''
+      }
+    });
+  }
+
+  async getTodos() {
     try {
-      const todos = await getTodos(this.props.auth.getIdToken())
+      const result = await getTodos(this.props.auth.getIdToken(), this.state.param);
       this.setState({
-        todos,
+        todos: result.items,
+        param: {
+          ...this.state.param,
+          nextKey: result.nextKey ?? '',
+        },
         loadingTodos: false
       })
     } catch (e) {
@@ -101,15 +159,51 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
     }
   }
 
+  async componentDidMount() {
+    await this.getTodos();
+  }
+
+  async componentDidUpdate(prevProps: any, prevState: TodosState) {
+    if (this.state.loadingTodos !== prevState.loadingTodos && this.state.loadingTodos) {
+      await this.getTodos();
+    }
+  }
+
   render() {
     return (
       <div>
-        <Header as="h1">TODOs</Header>
+        <Header as="h1">Tien's TODOs</Header>
 
         {this.renderCreateTodoInput()}
-
+        {this.renderPaginator()}
         {this.renderTodos()}
       </div>
+    )
+  }
+
+  renderPaginator() {
+    return (
+      <Container style={{ paddingBottom: '15px', textAlign: 'right' }}>          
+          <Button primary
+                  content='Previous'
+                  icon='left arrow'
+                  labelPosition='left'
+                  loading={this.state.loadingTodos}
+                  onClick={() => this.onClickPreviousButton()}
+                  disabled={(this.state.nextKeyList.length === 0)} />
+          <Button primary
+                  content='Next'
+                  icon='right arrow'
+                  labelPosition='right'
+                  loading={this.state.loadingTodos}
+                  onClick={() => this.onClickNextButton()}
+                  disabled={(this.state.param.nextKey === null || this.state.param.nextKey === '')} />
+          <Select placeholder='Page size' 
+                  style={{ marginRight: '10px' }} 
+                  options={LIMIT_OPTIONS} 
+                  value={this.state.param.limit} 
+                  onChange={(e, data) => this.onChangeLimit(Number(data.value))} />
+      </Container>
     )
   }
 
@@ -139,7 +233,7 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
   }
 
   renderTodos() {
-    if (this.state.loadingTodos) {
+    if (this.state.loadingTodos || !this.state.todos) {
       return this.renderLoading()
     }
 
@@ -158,50 +252,42 @@ export class Todos extends React.PureComponent<TodosProps, TodosState> {
 
   renderTodosList() {
     return (
-      <Grid padded>
+      <Item.Group divided>
         {this.state.todos.map((todo, pos) => {
           return (
-            <Grid.Row key={todo.todoId}>
-              <Grid.Column width={1} verticalAlign="middle">
-                <Checkbox
-                  onChange={() => this.onTodoCheck(pos)}
-                  checked={todo.done}
-                />
-              </Grid.Column>
-              <Grid.Column width={10} verticalAlign="middle">
-                {todo.name}
-              </Grid.Column>
-              <Grid.Column width={3} floated="right">
-                {todo.dueDate}
-              </Grid.Column>
-              <Grid.Column width={1} floated="right">
-                <Button
-                  icon
-                  color="blue"
-                  onClick={() => this.onEditButtonClick(todo.todoId)}
-                >
-                  <Icon name="pencil" />
-                </Button>
-              </Grid.Column>
-              <Grid.Column width={1} floated="right">
-                <Button
-                  icon
-                  color="red"
-                  onClick={() => this.onTodoDelete(todo.todoId)}
-                >
-                  <Icon name="delete" />
-                </Button>
-              </Grid.Column>
-              {todo.attachmentUrl && (
-                <Image src={todo.attachmentUrl} size="small" wrapped />
-              )}
-              <Grid.Column width={16}>
-                <Divider />
-              </Grid.Column>
-            </Grid.Row>
+            <Item>
+              <Item.Image src={todo.attachmentUrl ? todo.attachmentUrl : defaultImage} size="tiny" wrapped />
+              <Item.Content verticalAlign='middle'>
+                <Item.Header>{todo.name}</Item.Header>
+                <Item.Meta>
+                  <span className='cinema'>Due date: {todo.dueDate}</span>
+                </Item.Meta>
+                <Item.Extra>
+                  <Checkbox label='Mark done'
+                            onChange={() => this.onTodoCheck(pos)}
+                            checked={todo.done} />
+                  <Button.Group floated="right" size='mini'>
+                    <Button
+                      icon
+                      color="blue"
+                      onClick={() => this.onEditButtonClick(todo.todoId)}
+                    >
+                      <Icon name="pencil" />
+                    </Button>
+                    <Button
+                      icon
+                      color="red"
+                      onClick={() => this.onTodoDelete(todo.todoId)}
+                    >
+                      <Icon name="delete" />
+                    </Button>
+                  </Button.Group>
+                </Item.Extra>
+              </Item.Content>
+            </Item>
           )
         })}
-      </Grid>
+      </Item.Group>
     )
   }
 
