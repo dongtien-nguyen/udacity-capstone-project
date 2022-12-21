@@ -16,12 +16,18 @@ export class TodosAccess {
         private readonly todosTable = process.env.TODOS_TABLE
     ) { }
 
-    async getTodos(userId: string, nextKey: any, limit: number): Promise<GetTodosResponse> {
+    async getTodos(userId: string, nextKey: any, limit: number, orderBy: string): Promise<GetTodosResponse> {
         logger.debug('Getting all todos');
+
+        // Order by created date by default
+        let indexName = process.env.TODOS_CREATED_AT_INDEX;
+        if (!!orderBy && orderBy === "dueDate") {
+            indexName = process.env.TODOS_DUE_DATE_INDEX; 
+        }
 
         const params = {
             TableName: this.todosTable,
-            IndexName: process.env.TODOS_DUE_DATE_INDEX,
+            IndexName: indexName,
             KeyConditionExpression: 'userId = :userId',
             ExpressionAttributeValues: {
                 ':userId': userId

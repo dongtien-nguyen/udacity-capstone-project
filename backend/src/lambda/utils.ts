@@ -36,6 +36,22 @@ export function parseLimitParameter(event: APIGatewayProxyEvent): number {
 }
 
 /**
+ * Get value of the order by parameter.
+ *
+ * @param event HTTP event passed to a Lambda function
+ *
+ * @returns parsed "orderBy" parameter
+ */
+export function parseOrderByParameter(event: APIGatewayProxyEvent): string {
+  const orderByStr = getQueryParameter(event, 'orderBy')
+  if (!orderByStr) {
+    return undefined
+  }
+
+  return orderByStr;
+}
+
+/**
  * Get value of the limit parameter.
  *
  * @param event HTTP event passed to a Lambda function

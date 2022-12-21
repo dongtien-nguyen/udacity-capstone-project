@@ -5,7 +5,7 @@ import * as middy from 'middy'
 import { cors, httpErrorHandler } from 'middy/middlewares'
 
 import { getTodosForUser } from '../../businessLogic/todos'
-import { getUserId, parseNextKeyParameter, parseLimitParameter } from '../utils';
+import { getUserId, parseNextKeyParameter, parseLimitParameter, parseOrderByParameter } from '../utils';
 import { GetTodosResponse } from '../../models/GetTodosResponse'
 
 export const handler = middy(
@@ -13,10 +13,12 @@ export const handler = middy(
     const userId: string = getUserId(event);
     let nextKey; // Next key to continue scan operation if necessary
     let limit; // Maximum number of elements to return
+    let orderBy;
     try {
       // Parse query parameters
       nextKey = parseNextKeyParameter(event);
       limit = parseLimitParameter(event) || 10;
+      orderBy = parseOrderByParameter(event) || '';
     } catch (e) {
       console.log('Failed to parse query parameters: ', e.message)
       return {
@@ -30,7 +32,7 @@ export const handler = middy(
       }
     }
 
-    const response: GetTodosResponse = await getTodosForUser(userId, nextKey, limit);
+    const response: GetTodosResponse = await getTodosForUser(userId, nextKey, limit, orderBy);
 
     return {
       statusCode: 200,

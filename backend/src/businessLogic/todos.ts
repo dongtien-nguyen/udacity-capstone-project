@@ -25,10 +25,10 @@ export async function createTodo(model: CreateTodoRequest, userId: string): Prom
     return await todoAccess.createTodo(newItem);
 }
 
-export async function getTodosForUser(userId: string, nextKey: any, limit: number): Promise<GetTodosResponse> {
+export async function getTodosForUser(userId: string, nextKey: any, limit: number, orderBy: string): Promise<GetTodosResponse> {
     logger.info(`Get todo for user: ${userId}`);
 
-    return await todoAccess.getTodos(userId, nextKey, limit);
+    return await todoAccess.getTodos(userId, nextKey, limit, orderBy);
 }
 
 export async function updateTodo(todoId: string, userId: string, model: UpdateTodoRequest) {
